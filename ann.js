@@ -427,7 +427,7 @@ function setGenotype() {
 
   let randomNumber = 0;
 
-  randomNumber = Math.floor(Math.random() * 50);
+  randomNumber = Math.floor(Math.random() * 100);
 
   // Generamos una cadena de 50 elementos
   for (let i = 0; i < randomNumber; i++) {
@@ -460,27 +460,32 @@ function reproduce(individuo1, individuo2, tasaMutación = 0.01) {
     if (Math.random() < 0.5) {
       nuevoIndividuo += individuo1.genotype_xor[i];
     } else {
-      nuevoIndividuo += individuo2.genotype_xor[i];
+      nuevoIndividuo += individuo2.genotype_xor[i] === 0 ? 0 : 1;
     }
+  }
+  if (!nuevoIndividuo) {
+    nuevoIndividuo += 0;
   }
 
   // Mutar el nuevo individuo al azar
+  let arr = nuevoIndividuo.split("");
+
   for (let i = 0; i < nuevoIndividuo.length; i++) {
     if (Math.random() < tasaMutación) {
-      nuevoIndividuo[i] = nuevoIndividuo[i] === "0" ? "1" : "0";
+      arr[i] = arr[i] === "0" ? "1" : "0";
     }
   }
   //console.log(nuevoIndividuo);
-  return nuevoIndividuo;
+  return arr;
 }
 
 let individuals = [{}];
 
-for (let i = 0; i < 10000; i++) {
+for (let i = 0; i < 1000; i++) {
   const genotype_xor = setGenotype();
   const ann = new Ann(genotype_xor, 2, 1); // genotype, inputs and outputs
   const trainer = new Trainer(ann, 0.01); // genotype, inputs and outputs
-  const fitness = trainer.TrainingOffline(5000);
+  const fitness = trainer.TrainingOffline(1000);
 
   if (fitness.error == 0 && fitness.iteration > 0) {
     let individual = {
@@ -499,16 +504,19 @@ let num2 = best[1];
 
 console.log(num1, num2); // Output: 1 2
 
-const first = individuals.findIndex((element) => {
+let first = individuals.findIndex((element) => {
   return element.iteration == num1;
 });
 
-const second = individuals.findIndex((element) => {
+let second = individuals.findIndex((element) => {
   return element.iteration == num2;
 });
 
+
+
 console.log(individuals[first]);
 console.log(individuals[second]);
+let individualsSecondGeneration = [];
 
 if (
   individuals[first].genotype_xor &&
@@ -516,17 +524,49 @@ if (
   individuals[second].genotype_xor &&
   individuals[second].genotype_xor.length > 0
 ) {
-  const child = reproduce(individuals[first], individuals[second]);
 
-  // Convertir la cadena en un array utilizando el método split()
-  let array = child.split("");
+  for (let j = 0; j < 30; j++) {
 
-  // Convertir cada elemento del array a un número utilizando el método map()
-  let arrayNum = array.map((element) => parseInt(element));
+    individualsSecondGeneration = [];
 
-  //console.log(arrayNum); // Output: [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+    for (let i = 0; i < 1000; i++) {
 
-  const ann = new Ann(arrayNum, 2, 1); // genotype, inputs and outputs
-  const trainer = new Trainer(ann, 0.01); // genotype, inputs and outputs
-  const fitness = trainer.TrainingOffline(1000);
+      let child = reproduce(individuals[first], individuals[second]);
+
+      let arrayNum = child.map((element) => parseInt(element));
+
+      const ann = new Ann(arrayNum, 2, 1); // genotype, inputs and outputs
+      const trainer = new Trainer(ann, 0.01); // genotype, inputs and outputs
+      const fitness = trainer.TrainingOffline(1000);
+
+      if (fitness.error == 0 && fitness.iteration > 0) {
+        let individual = {
+          genotype_xor: arrayNum,
+          iteration: fitness.iteration,
+        };
+        individualsSecondGeneration.push(individual);
+      }
+    }
+
+    best = individualsSecondGeneration.map((element) => element.iteration);
+    best.sort((a, b) => a - b);
+    let num1 = best[0];
+    let num2 = best[1];
+
+    console.log(num1, num2); // Output: 1 2
+
+    first = individualsSecondGeneration.findIndex((element) => {
+      return element.iteration == num1;
+    });
+
+    second = individualsSecondGeneration.findIndex((element) => {
+      return element.iteration == num2;
+    });
+
+    console.log("INDIVIDUALS GENERATION" + "__________" + j);
+    console.log(individualsSecondGeneration[first]);
+    console.log(individualsSecondGeneration[second]);
+
+    individuals = individualsSecondGeneration;
+  }
 }
