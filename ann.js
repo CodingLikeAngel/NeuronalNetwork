@@ -52,7 +52,7 @@ class Ann {
 
         // Make sure "hidden" is a finite, non-negative integer
         if (!Number.isFinite(hidden) || hidden < 0) {
-            throw new RangeError("Invalid value for 'hidden'");
+            hidden  =   Math.round(hidden);
         }
         hidden = Math.floor(hidden);
 
@@ -152,7 +152,7 @@ class Ann {
                 }
             }
         }
-        this.printWeightMapping(inputs, hidden, outputs);
+       // this.printWeightMapping(inputs, hidden, outputs);
     }
 
     printWeightMapping(inputs, hidden, outputs) {
@@ -329,14 +329,15 @@ class Trainer {
         const datagen = new DataGen(this.length_I, sets, min, binary);
 
         const dataset = datagen.getDataset;
+        let error = 0;
 
         let lastEvalError = Number.MAX_VALUE;
         let evalError = 0;
         for (let i = 0; i < trainingIterations; i++) {
-            console.log(
-                `____________________________ITERATION___${i + 1
-                } of ${trainingIterations}`
-            );
+            // console.log(
+            //     `____________________________ITERATION___${i + 1
+            //     } of ${trainingIterations}`
+            // );
 
             this.ann.deltas_I_O = new Array(this.length_I)
                 .fill()
@@ -351,7 +352,7 @@ class Trainer {
             this.ann.deltas_H_BIAS = new Array(this.length_H).fill(0);
             this.ann.deltas_O_BIAS = new Array(this.length_O).fill(0);
 
-            let error = 0;
+           
             for (let j = 0, max = dataset.length; j < max; j++) {
                 this.FeedForward(dataset, j);
                 this.BackPropagation();
@@ -363,32 +364,34 @@ class Trainer {
                     error += currentError ** 2;
                 }
 
-                console.log(
-                    `________________________________________________________EXPECTED_____${this.ExpectedValue_XOR(
-                        0
-                    )}`
-                );
-                console.log(
-                    `__________________________________________________________NEURON_____${this.ann.neurons_O[0]}`
-                );
-                console.log("");
+                // console.log(
+                //     `________________________________________________________EXPECTED_____${this.ExpectedValue_XOR(
+                //         0
+                //     )}`
+                // );
+                // console.log(
+                //     `__________________________________________________________NEURON_____${this.ann.neurons_O[0]}`
+                // );
+                // console.log("");
             }
 
             error /= dataset.length;
             evalError += Math.pow(error, 2);
 
-            console.log(
-                "________________________________________________________GLOBAL_ERROR___" +
-                error
-            );
-            console.log("\n");
+            // console.log(
+            //     "________________________________________________________GLOBAL_ERROR___" +
+            //     error
+            // );
+            // console.log("\n");
 
 
             this.WeightsCorrection();
 
         }
 
-        console.log("END");
+//        console.log("END");
+
+        return error;
     }
 
     DeltaWeights() {
@@ -464,12 +467,7 @@ class Trainer {
 }
 
 function setGenotype() {
-    // const genotype = [];
-    // for (let i = 0; i < 4; i++) {
-    //     genotype.push(1);
-    // }
 
-    // return genotype;
     let randomString = [];
 
     let randomNumber = 0;
@@ -500,7 +498,42 @@ function setGenotype() {
 
 //const ann = new Ann([1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1], 2, 3);
 
-const genotype_xor = setGenotype();
-const ann = new Ann(genotype_xor, 2, 1); // genotype, inputs and outputs
-const trainer = new Trainer(ann, 0.01); // genotype, inputs and outputs
-trainer.TrainingOffline(1000);
+  function reproduce(individuo1, individuo2) {
+    // Cruzar los genes de los individuos para crear un nuevo individuo
+    let nuevoIndividuo = "";
+    for (let i = 0; i < individuo1.length; i++) {
+      if (Math.random() < 0.5) {
+        nuevoIndividuo += individuo1[i];
+      } else {
+        nuevoIndividuo += individuo2[i];
+      }
+    }
+  
+    // Mutar el nuevo individuo al azar
+    for (let i = 0; i < nuevoIndividuo.length; i++) {
+      if (Math.random() < tasaMutación) {
+        nuevoIndividuo[i] = nuevoIndividuo[i] === "0" ? "1" : "0";
+      }
+    }
+  
+    return nuevoIndividuo;
+  }
+
+  let individuals = [];
+
+for(let i = 0 ; i< 100; i++)
+{
+    const genotype_xor = setGenotype();
+    const ann = new Ann(genotype_xor, 2, 1); // genotype, inputs and outputs
+    const trainer = new Trainer(ann, 0.01); // genotype, inputs and outputs
+    const fitness = trainer.TrainingOffline(1000);
+
+    if(fitness == 0)
+    {
+        individuals.push(genotype_xor);
+    }
+
+  
+}
+
+console.log(individuals);
