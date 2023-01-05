@@ -52,7 +52,7 @@ class Ann {
 
         // Make sure "hidden" is a finite, non-negative integer
         if (!Number.isFinite(hidden) || hidden < 0) {
-            hidden  =   Math.round(hidden);
+            hidden = Math.round(hidden);
         }
         hidden = Math.floor(hidden);
 
@@ -152,7 +152,7 @@ class Ann {
                 }
             }
         }
-       // this.printWeightMapping(inputs, hidden, outputs);
+        // this.printWeightMapping(inputs, hidden, outputs);
     }
 
     printWeightMapping(inputs, hidden, outputs) {
@@ -352,7 +352,7 @@ class Trainer {
             this.ann.deltas_H_BIAS = new Array(this.length_H).fill(0);
             this.ann.deltas_O_BIAS = new Array(this.length_O).fill(0);
 
-           
+
             for (let j = 0, max = dataset.length; j < max; j++) {
                 this.FeedForward(dataset, j);
                 this.BackPropagation();
@@ -373,10 +373,12 @@ class Trainer {
                 //     `__________________________________________________________NEURON_____${this.ann.neurons_O[0]}`
                 // );
                 // console.log("");
-            }
 
+            }
             error /= dataset.length;
             evalError += Math.pow(error, 2);
+
+
 
             // console.log(
             //     "________________________________________________________GLOBAL_ERROR___" +
@@ -387,11 +389,16 @@ class Trainer {
 
             this.WeightsCorrection();
 
+            if (error == 0) {
+                //  console.log("win" + j);
+                return { error: error, iteration: i };
+            }
+
         }
 
-//        console.log("END");
+        //        console.log("END");
 
-        return error;
+        return { error: error, iteration: -1 };
     }
 
     DeltaWeights() {
@@ -491,49 +498,91 @@ function setGenotype() {
         randomString.push(1);
     }
     // Imprimimos la cadena generada
-    console.log(randomString);
+    //   console.log(randomString);
 
     return randomString;
 }
 
 //const ann = new Ann([1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1], 2, 3);
 
-  function reproduce(individuo1, individuo2) {
+function reproduce(individuo1, individuo2, tasaMutación = 0.01) {
     // Cruzar los genes de los individuos para crear un nuevo individuo
     let nuevoIndividuo = "";
-    for (let i = 0; i < individuo1.length; i++) {
-      if (Math.random() < 0.5) {
-        nuevoIndividuo += individuo1[i];
-      } else {
-        nuevoIndividuo += individuo2[i];
-      }
+    for (let i = 0; i < individuo1.genotype_xor.length; i++) {
+        if (Math.random() < 0.5) {
+            nuevoIndividuo += individuo1.genotype_xor[i];
+        } else {
+            nuevoIndividuo += individuo2.genotype_xor[i];
+        }
     }
-  
+
     // Mutar el nuevo individuo al azar
     for (let i = 0; i < nuevoIndividuo.length; i++) {
-      if (Math.random() < tasaMutación) {
-        nuevoIndividuo[i] = nuevoIndividuo[i] === "0" ? "1" : "0";
-      }
+        if (Math.random() < tasaMutación) {
+            nuevoIndividuo[i] = nuevoIndividuo[i] === "0" ? "1" : "0";
+        }
     }
-  
+    //console.log(nuevoIndividuo);
     return nuevoIndividuo;
-  }
+}
 
-  let individuals = [];
+let individuals = [{}];
 
-for(let i = 0 ; i< 100; i++)
-{
+for (let i = 0; i < 100; i++) {
     const genotype_xor = setGenotype();
     const ann = new Ann(genotype_xor, 2, 1); // genotype, inputs and outputs
     const trainer = new Trainer(ann, 0.01); // genotype, inputs and outputs
     const fitness = trainer.TrainingOffline(1000);
 
-    if(fitness == 0)
-    {
-        individuals.push(genotype_xor);
+    if (fitness.error == 0 && fitness.iteration > 0) {
+        let individual =
+        {
+            genotype_xor: genotype_xor,
+            iteration: fitness.iteration
+        }
+        individuals.push(individual);
+        //    console.log(individual);
     }
 
-  
 }
 
-console.log(individuals);
+
+
+let best = individuals.map(element => element.iteration);
+best.sort((a, b) => a - b);
+let num1 = best[0];
+let num2 = best[1];
+
+console.log(num1, num2); // Output: 1 2
+
+
+const first = individuals.findIndex(element => {
+    return element.iteration == num1
+});
+
+
+const second = individuals.findIndex(element => {
+    return element.iteration == num2
+});
+
+
+console.log(individuals[first]);
+console.log(individuals[second]);
+
+if (individuals[first] && individuals[second]) {
+    const child = reproduce(individuals[first], individuals[second]);
+
+    // Convertir la cadena en un array utilizando el método split()
+    let array = child.split("");
+
+    // Convertir cada elemento del array a un número utilizando el método map()
+    let arrayNum = array.map(element => parseInt(element));
+
+    //console.log(arrayNum); // Output: [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+
+    const ann = new Ann(arrayNum, 2, 1); // genotype, inputs and outputs
+    const trainer = new Trainer(ann, 0.01); // genotype, inputs and outputs
+    const fitness = trainer.TrainingOffline(1000);
+
+}
+
